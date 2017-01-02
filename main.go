@@ -5,12 +5,24 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/twtiger/gosecco"
 	"github.com/twtiger/gosecco/parser"
 )
 
-func buildSeccomp(path string, f *os.File) error {
+type pathList []string
+
+func (i *pathList) String() string {
+	return strings.Join((*i)[:], ",")
+}
+
+func (i *pathList) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+func buildSeccomp(source parser.Source, f *os.File) error {
 	settings := gosecco.SeccompSettings{
 		DefaultPositiveAction: "allow",
 		DefaultNegativeAction: "ENOSYS",
@@ -19,7 +31,6 @@ func buildSeccomp(path string, f *os.File) error {
 		ActionOnAuditFailure:  "kill",
 	}
 
-	source := &parser.FileSource{path}
 	bpf, err := gosecco.PrepareSource(source, settings)
 	if err != nil {
 		return err
@@ -35,15 +46,20 @@ func buildSeccomp(path string, f *os.File) error {
 }
 
 func main() {
-	var rulePath string
-	flag.StringVar(&rulePath, "rules", "", "path to file containing rules in gosecco format")
+	var sourcePaths pathList
+	flag.Var(&sourcePaths, "rules", "path to file containing rules in gosecco format")
 	flag.Parse()
 
-	if len(rulePath) < 1 {
-		log.Fatal("The path to a file containing rules must be provided")
+	if len(sourcePaths) < 1 {
+		log.Fatal("At least one file must be provided.")
 	}
 
-	if err := buildSeccomp(rulePath, os.Stdout); err != nil {
+	var combined parser.CombinedSource
+	for _, path := range sourcePaths {
+		combined.Sources = append(combined.Sources, &parser.FileSource{path})
+	}
+
+	if err := buildSeccomp(&combined, os.Stdout); err != nil {
 		log.Fatalf("%v", err)
 	}
 }
