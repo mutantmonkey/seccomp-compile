@@ -1,5 +1,7 @@
 # seccomp-compile
 
+As of November 2024, this package is no longer maintained. There have been no updates to gosecco since 2017, and I haven't used this utility in years. I recommend using the [libseccomp bindings for Go](https://github.com/seccomp/libseccomp-golang) to write your rules and export them in BPF format instead.
+
 This tiny utility compiles seccomp rules in [gosecco](https://github.com/twtiger/gosecco) format and spits them out on stdout. This makes it convenient to add seccomp policies to [bubblewrap](https://github.com/projectatomic/bubblewrap) using simply a shell script.
 
 ## Usage
